@@ -1,4 +1,6 @@
-import React, {Component} from 'react';
+import React, { Component } from 'react';
+
+// React-native components
 import {
   AppRegistry,
   StyleSheet,
@@ -12,10 +14,13 @@ import {
   Platform,
 } from 'react-native';
 
+//Test for specific OS to provide Logic or UI
 const isAndroid = Platform.OS == 'android';
 const viewPadding = 10;
 
 export default class TodoList extends Component {
+
+  // initial state
   state = {
     tasks: [],
     text: '',
@@ -37,6 +42,9 @@ export default class TodoList extends Component {
             text: '',
           };
         },
+
+        // Saved to localStorage after state change 
+        // Must use this.state to save new date otherwise it was save old data instead
         () => Tasks.save(this.state.tasks),
       );
     }
@@ -56,35 +64,50 @@ export default class TodoList extends Component {
   };
 
   componentDidMount() {
+
+    // Changes padding so when keyboard is expanded the input is still in view
     Keyboard.addListener(
       isAndroid ? 'keyboardDidShow' : 'keyboardWillShow',
       (e) => this.setState({viewMargin: e.endCoordinates.height + viewPadding}),
     );
 
+    // Changes padding of input when keyboard is hidden
     Keyboard.addListener(
       isAndroid ? 'keyboardDidHide' : 'keyboardWillHide',
       () => this.setState({viewMargin: viewPadding}),
     );
-
+    
+    // Mounted Component it loads all tasks from LocalStorage API
     Tasks.all((tasks) => this.setState({tasks: tasks || []}));
   }
 
   render() {
     return (
+      // Container View
+      // this.state overrides style.container order matters unlike CSS
       <View style={[styles.container, {paddingBottom: this.state.viewMargin}]}>
+       
+       {/** Task List */}
         <FlatList
-          style={styles.list}
+          style={styles.list}       
+        
+          {/** Array of tasks */}
           data={this.state.tasks}
+          
+          {/** Specify how to render each item */}
           renderItem={({item, index}) => (
             <View>
               <View style={styles.listItemCont}>
                 <Text style={styles.listItem}>{item.text}</Text>
+                {/** assign handler events */}
                 <Button title="X" onPress={() => this.deleteTask(index)} />
               </View>
               <View style={styles.hr} />
             </View>
           )}
         />
+
+        {/** Input to add a task */}
         <TextInput
           style={styles.textInput}
           onChangeText={this.changeTextHandler}
@@ -99,6 +122,12 @@ export default class TodoList extends Component {
   }
 }
 
+{/** 
+  'convert' is similar to LocalStorage 
+  It is serialized data to a string with a separator 
+  Then deserialized to retrieve 
+*/}
+
 let Tasks = {
   convertToArrayOfObject(tasks, callback) {
     return callback(
@@ -108,6 +137,12 @@ let Tasks = {
   convertToStringWithSeparators(tasks) {
     return tasks.map((task) => task.text).join('||');
   },
+
+  /**
+    Data is saved locally wit AsyncStorage
+    It uses tools on different platforms to save data
+  */
+  
   all(callback) {
     return AsyncStorage.getItem('TASKS', (err, tasks) =>
       this.convertToArrayOfObject(tasks, callback),
@@ -117,6 +152,9 @@ let Tasks = {
     AsyncStorage.setItem('TASKS', this.convertToStringWithSeparators(tasks));
   },
 };
+
+// Styling is written as an object and assigned to a component one by one 
+// No cascade or global styling like css
 
 const styles = StyleSheet.create({
   container: {
